@@ -17,6 +17,7 @@ dev = [
   "pytest-cov>=7.0.0",
   "pylint>=2.15.0",
   "pycodestyle>=2.14",
+  "pytest-timeout>=2.4.0",
 ]
 
 [tool.pytest.ini_options]
