@@ -1,7 +1,9 @@
-import pytest
-import numpy as np
-import sys
 import os
+import sys
+
+import numpy as np
+import pytest
+
 try:
     from src.hopfield import HopfieldNetwork, visualize_state
     from src.utils import generate_binary_matrix, make_noisy_state
@@ -11,8 +13,12 @@ except ModuleNotFoundError:
     from src.utils import generate_binary_matrix, make_noisy_state
 
 TIME_LIMIT = 300
-message = np.load(os.path.join(os.path.dirname(__file__), "data", "message.npy"), allow_pickle=True)
-image = np.load(os.path.join(os.path.dirname(__file__), "data", "image.npy"), allow_pickle=True)
+message = np.load(
+    os.path.join(os.path.dirname(__file__), "data", "message.npy"), allow_pickle=True
+)
+image = np.load(
+    os.path.join(os.path.dirname(__file__), "data", "image.npy"), allow_pickle=True
+)
 letters_file = os.path.join(os.path.dirname(__file__), "data", "big_letters.json")
 
 
@@ -22,8 +28,32 @@ letters_file = os.path.join(os.path.dirname(__file__), "data", "big_letters.json
     [
         (generate_binary_matrix(letter, letters_file), noise, seed, 1_000, 0.9)
         for letter in [
-            "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M",
-            "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"
+            "A",
+            "B",
+            "C",
+            "D",
+            "E",
+            "F",
+            "G",
+            "H",
+            "I",
+            "J",
+            "K",
+            "L",
+            "M",
+            "N",
+            "O",
+            "P",
+            "Q",
+            "R",
+            "S",
+            "T",
+            "U",
+            "V",
+            "W",
+            "X",
+            "Y",
+            "Z",
         ]
         for noise in [0.1, 0.2]
         for seed in [0, 42]
@@ -73,8 +103,32 @@ def test_hard_hopfield(state, noise_level, seed, iteration, expected):
     [
         (generate_binary_matrix(letter, letters_file), 1_000)
         for letter in [
-            "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M",
-            "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"
+            "A",
+            "B",
+            "C",
+            "D",
+            "E",
+            "F",
+            "G",
+            "H",
+            "I",
+            "J",
+            "K",
+            "L",
+            "M",
+            "N",
+            "O",
+            "P",
+            "Q",
+            "R",
+            "S",
+            "T",
+            "U",
+            "V",
+            "W",
+            "X",
+            "Y",
+            "Z",
         ]
     ],
 )
@@ -93,4 +147,6 @@ def test_hopfield_energy(state, iteration):
     )
     diff = np.diff(energies)
     neg_ratio = np.mean(diff <= 0)
-    assert neg_ratio >= 0.99, f"The ration of null or negative energy differences is {neg_ratio} and should be ~1.0"
+    assert neg_ratio >= 0.99, (
+        f"The ration of null or negative energy differences is {neg_ratio} and should be ~1.0"
+    )

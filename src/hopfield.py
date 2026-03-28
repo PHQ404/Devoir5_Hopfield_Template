@@ -1,8 +1,9 @@
 import os
-from typing import Optional, List
+from typing import List, Optional
+
 import matplotlib.pyplot as plt
-from matplotlib.colors import ListedColormap
 import numpy as np
+from matplotlib.colors import ListedColormap
 
 
 class HopfieldNetwork:
@@ -27,11 +28,12 @@ class HopfieldNetwork:
         have the same size.
     :raises ValueError: If the size of the state and the number of neurons do not match.
     """
+
     def __init__(
-            self,
-            weights: np.ndarray,
-            thresholds: np.ndarray,
-            state: Optional[np.ndarray] = None,
+        self,
+        weights: np.ndarray,
+        thresholds: np.ndarray,
+        state: Optional[np.ndarray] = None,
     ):
         raise NotImplementedError("This class is not implemented yet")
 
@@ -96,10 +98,10 @@ class HopfieldNetwork:
         raise NotImplementedError("This class is not implemented yet")
 
     def simulate(
-            self,
-            m: int,
-            state: Optional[np.ndarray] = None,
-            history_length: Optional[int] = 100,
+        self,
+        m: int,
+        state: Optional[np.ndarray] = None,
+        history_length: Optional[int] = 100,
     ) -> np.ndarray:
         """
         Simulates the evolution of states in a Hopfield network over time.
@@ -168,28 +170,82 @@ class HopfieldNetwork:
 
 
 def visualize_weights(net: HopfieldNetwork):
+    """
+    Visualizes the weight matrix of a Hopfield network as a heatmap.
+
+    This function creates a visual representation of the network's weight matrix using matplotlib,
+    where connections between neurons are displayed as colored pixels. Positive weights are shown
+    in one color and negative weights in another, providing insight into the learned patterns.
+
+    :param net: The Hopfield network whose weights will be visualized.
+    :type net: HopfieldNetwork
+
+    :return: A tuple containing the matplotlib figure and axes objects for further customization.
+    :rtype: tuple[plt.Figure, plt.Axes]
+    """
     fig, ax = plt.subplots()
-    custom_cmap = ListedColormap(['deepskyblue', 'orangered'])
+    custom_cmap = ListedColormap(["deepskyblue", "orangered"])
     ax.imshow(net.weights, cmap=custom_cmap)
     plt.show()
     return fig, ax
 
 
 def visualize_state(net: HopfieldNetwork):
+    """
+    Visualizes the current state of a Hopfield network as a 2D grid.
+
+    This function displays the current neuron states in the network as a visual grid,
+    where each neuron's state (0 or 1) is represented by a colored pixel. This is
+    particularly useful for visualizing pattern recognition and memory recall in
+    the network.
+
+    :param net: The Hopfield network whose current state will be visualized.
+    :type net: HopfieldNetwork
+
+    :return: A tuple containing the matplotlib figure and axes objects for further customization.
+    :rtype: tuple[plt.Figure, plt.Axes]
+    """
     fig, ax = plt.subplots()
-    ax.axis('off')
-    custom_cmap = ListedColormap(['deepskyblue', 'orangered'])
+    ax.axis("off")
+    custom_cmap = ListedColormap(["deepskyblue", "orangered"])
     ax.imshow(net.state, cmap=custom_cmap)
     plt.show()
     return fig, ax
 
 
-def make_animation_from_history(history: np.ndarray, filename: str = "hopfield.gif", **kwargs):
+def make_animation_from_history(
+    history: np.ndarray, filename: str = "hopfield.gif", **kwargs
+):
+    """
+    Creates an animated GIF showing the evolution of network states over time.
+
+    This function takes a sequence of network states and creates an animated visualization
+    showing how the network's state changes over time during simulation. Each frame
+    represents a different time step in the network's evolution.
+
+    :param history: A 3D numpy array containing the network states at different time steps,
+                   with shape (time_steps, height, width).
+    :type history: np.ndarray
+    :param filename: The path and filename where the animated GIF will be saved.
+                    Defaults to "hopfield.gif".
+    :type filename: str
+    :param kwargs: Additional keyword arguments for animation customization:
+                  - interval: Time between frames in milliseconds (default: 200)
+                  - fps: Frames per second for the animation (default: None)
+    :type kwargs: dict
+
+    :return: A tuple containing the matplotlib figure, axes, and animation objects.
+    :rtype: tuple[plt.Figure, plt.Axes, FuncAnimation]
+
+    Note:
+    - Requires ImageMagick to be installed for GIF generation.
+    - The function automatically creates the directory structure if it doesn't exist.
+    """
     from matplotlib.animation import FuncAnimation
 
     fig, ax = plt.subplots()
-    ax.axis('off')
-    custom_cmap = ListedColormap(['deepskyblue', 'orangered'])
+    ax.axis("off")
+    custom_cmap = ListedColormap(["deepskyblue", "orangered"])
     im = ax.imshow(history[0], cmap=custom_cmap)
 
     def update(frame):
@@ -197,7 +253,12 @@ def make_animation_from_history(history: np.ndarray, filename: str = "hopfield.g
         return [im]
 
     os.makedirs(os.path.dirname(filename), exist_ok=True)
-    ani = FuncAnimation(fig, update, frames=range(len(history)), blit=True, interval=kwargs.get("interval", 200))
-    ani.save(filename, writer='imagemagick', fps=kwargs.get("fps", None))
+    ani = FuncAnimation(
+        fig,
+        update,
+        frames=range(len(history)),
+        blit=True,
+        interval=kwargs.get("interval", 200),
+    )
+    ani.save(filename, writer="imagemagick", fps=kwargs.get("fps", None))
     return fig, ax, ani
-
