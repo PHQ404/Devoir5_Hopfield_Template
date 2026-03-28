@@ -1,0 +1,257 @@
+\documentclass[12pt, letterpaper]{article}
+
+% --- Packages de base ---
+\usepackage{amsmath, amssymb, physics}
+\usepackage[french]{babel}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{hyperref}
+\usepackage{caption}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{tcolorbox}
+
+% --- Bibliographie ---
+\usepackage[style=ieee]{biblatex}
+\addbibresource{references.bib}
+
+% --- Couleur uniforme pour tous les encadrés ---
+\tcbset{colback=blue!5!white, colframe=blue!40!black, boxrule=0.8pt, arc=2mm, auto outer arc, leftrule=1mm, rightrule=1mm}
+
+% --- Début du document ---
+\begin{document}
+
+\title{Devoir 5 : Réseau de Hopfield}
+\author{PHQ404}
+\date{Date de remise: -}
+\maketitle
+
+% ---------------------------------------------------
+\section{Objectif}\label{sec:objectif}
+% ---------------------------------------------------
+
+\noindent L'objectif de ce devoir est d'implémenter une \textbf{mémoire associative} à l'aide d'un réseau de Hopfield.
+Vous apprendrez à :
+\begin{itemize}
+	\item Stocker des motifs dans le réseau,
+	\item Rappeler ces motifs à partir d’entrées bruitées ou incomplètes,
+	\item Observer la dynamique du réseau et comprendre la convergence vers des états stables.
+\end{itemize}
+
+\noindent Ce travail illustre un mécanisme simple de correction d'erreur et introduit des concepts fondamentaux de neuroscience computationnelle et de physique statistique appliquée aux réseaux de neurones.
+
+% ---------------------------------------------------
+\section{Introduction}\label{sec:introduction}
+% ---------------------------------------------------
+
+\noindent John Hopfield (1933-) est un physicien et biologiste théorique américain dont les contributions ont profondément marqué le domaine de l'intelligence artificielle et des neurosciences computationnelles.
+Il est surtout connu pour avoir introduit en 1982 le \textbf{réseau de Hopfield}, un type de réseau de neurones artificiel possédant une capacité de mémoire associative.
+
+\bigskip
+
+\noindent L'idée centrale est la suivante : le réseau stocke des motifs sous forme d'\textbf{états stables}. Lorsqu'on lui fournit une version incomplète ou bruitée d’un motif, sa dynamique interne le fait évoluer vers l'état stable correspondant à un souvenir stocké.
+
+\begin{tcolorbox}[title=Idée clé]
+	Un réseau de Hopfield fonctionne comme un système de récupération d’information avec correction d’erreur : chaque motif mémorisé correspond à un \textbf{minimum local} d'une fonction d’énergie, et la dynamique du réseau fait converger toute entrée proche vers ce minimum.
+\end{tcolorbox}
+
+\noindent Cette approche a inspiré de nombreuses recherches sur les algorithmes d'optimisation et les modèles de mémoire du cerveau, et a permis d’établir un pont entre physique et biologie computationnelle.
+
+\bigskip
+
+\noindent Articles fondateurs :
+\begin{itemize}
+	\item \fullcite{hopfield1982neural}~\cite{hopfield1982neural}
+	\item \fullcite{hopfield1984neurons}~\cite{hopfield1984neurons}
+\end{itemize}
+
+% ---------------------------------------------------
+\subsection{Définition du réseau de Hopfield}
+% ---------------------------------------------------
+
+\noindent Un réseau de Hopfield est un réseau de neurones de type McCulloch-Pitts avec les caractéristiques suivantes :
+\begin{itemize}
+	\item \textbf{Réseau complet et simple} : chaque neurone est connecté à tous les autres neurones, sauf à lui-même. Le réseau est donc récurrent et sans boucle.
+	\item \textbf{Poids symétriques} : $W = W^\top$, donc $w_{ij} = w_{ji}$ pour tous les neurones $i,j$.
+	\item \textbf{Poids positifs ou négatifs} : permet de modéliser l'\textbf{inhibition}, où l'activité d’un neurone peut réduire celle d’un autre, limitant ainsi la transmission de signaux excitateurs.
+	\item \textbf{Plasticité selon Hebb} : les connexions se renforcent lorsque les neurones sont activés simultanément.
+	      Formulé par \textbf{Donald Hebb (1949)} : \textit{“neurons that fire together, wire together”}.
+\end{itemize}
+
+\begin{tcolorbox}[title=Remarque]
+	Cette structure permet au réseau de représenter les souvenirs de manière \textbf{distribuée} : chaque neurone participe à plusieurs motifs, et chaque motif est représenté par plusieurs neurones.
+\end{tcolorbox}
+
+% ---------------------------------------------------
+\subsection{Dynamique du réseau}\label{subsec:dynamique}
+% ---------------------------------------------------
+
+\noindent La dynamique du réseau de Hopfield est définie comme suit :
+\begin{itemize}
+	\item \textbf{Activité binaire} : l’état du neurone $i$ à l’instant $t$ est $x_i(t) \in \{0,1\}$.
+	\item \textbf{Temps discret} : $t \in \{0,1,2,\dots\}$.
+	\item \textbf{Mise à jour asynchrone} : à chaque pas de temps, un seul neurone est choisi aléatoirement pour mise à jour.
+	\item \textbf{Règle de mise à jour} : Si le neurone $i$ à l'instant $t$ est mis à jour, alors
+	      \[
+		      x_i(t+1) = H\Bigg(\sum_{j=1}^n w_{ij} x_j(t) - \theta_i \Bigg),
+	      \]
+	      où $H$ est la fonction de Heaviside.
+	      Sous forme vectorielle :
+	      \[
+		      \mathbf{x}(t+1) = H(W \mathbf{x}(t) - \boldsymbol{\theta}).
+	      \]
+\end{itemize}
+
+\subsection{Concepts fondamentaux}
+
+Voici quelques concepts fondamentaux nécessaires pour discuter du modèle de Hopfield:
+\begin{itemize}
+	\item \textbf{État stationnaire} : $\mathbf{x}^*$ tel que $\mathbf{x}(t) = \mathbf{x}^*$ pour tout $t$.
+	\item \textbf{Fonction d’énergie} (fonction de Lyapunov) :
+	      \[
+		      E(\mathbf{x}) = -\frac{1}{2}\sum_{i\neq j} w_{ij}x_ix_j + \sum_i \theta_i x_i = -\frac{1}{2} \mathbf{x}^\top W \mathbf{x} + \boldsymbol{\theta}^\top \mathbf{x}.
+	      \]
+	\item \textbf{Résultat fondamental de Hopfield} : avec mise à jour asynchrone et poids symétriques,
+	      \[
+		      E(\mathbf{x}(t+1)) \le E(\mathbf{x}(t)),
+	      \]
+	      ce qui garantit que les minima locaux de $E$ correspondent à des états stationnaires stables.
+	\item \textbf{Mémoire} : chaque état stationnaire stable représente un motif mémorisé. À partir d’un état proche, le réseau converge vers ce motif.
+\end{itemize}
+
+% ---------------------------------------------------
+\subsection{Plasticité et apprentissage d’états}
+% ---------------------------------------------------
+
+\begin{itemize}
+	\item \textbf{Apprentissage d'un état} : pour stocker un seul état $\mathbf{y}$, on change $W_{i,j}$ pour
+	      \[
+		      W_{ij} \leftarrow W_{ij} +
+		      \begin{cases}
+			      (2y_i-1)(2y_j-1), & i \neq j \\
+			      0,                & i=j
+		      \end{cases}
+	      \]
+	\item \textbf{Apprentissage de plusieurs états} : pour stocker les $\mathbf{y}^\mu$, $\mu=1,\ldots, p$,  on change $W_{i,j}$ pour
+	      \[
+		      W_{ij} \leftarrow W_{ij} +
+		      \begin{cases}
+			      \sum_\mu (2y_i^\mu-1)(2y_j^\mu-1), & i \neq j \\
+			      0,                                 & i=j
+		      \end{cases}
+	      \]
+	\item \textbf{Lien avec Hebb} : les termes $y_i^\mu y_j^\mu$ renforcent les connexions lorsque les neurones $i$ et $j$ sont activés simultanément.
+\end{itemize}
+
+\begin{tcolorbox}[title=Remarque]
+	Stocker trop d’états peut créer des \textbf{états parasites} (minima locaux non désirés), ce qui réduit la fiabilité du rappel.
+\end{tcolorbox}
+
+% ---------------------------------------------------
+\section{Énoncé}\label{sec:enonce}
+% ---------------------------------------------------
+
+\subsection{Implémentation du réseau}\label{subsec:modele}
+
+\noindent Vous allez devoir implémenter une classe \texttt{HopfieldNetwork} qui créée un réseau de Hopfield.
+Dans celle-ci, vous devrez implémenter les méthodes suivantes:
+\begin{itemize}
+	\item \texttt{\_\_init\_\_} : le constructeur de la classe qui prend en argument les poids de connexions
+	      \texttt{weights}, les seuils \texttt{thresholds} et l'état initial \texttt{initial\_state} du réseau.
+	\item \texttt{n} : Une propriété qui retourne le nombre de neurones dans le réseau.
+	\item \texttt{energy} : Une méthode qui retourne l'énergie du réseau.
+	\item \texttt{get\_state\_energy} : Une méthode qui calcule l'énergie d'un état donné.
+	\item \texttt{set\_state} : Une méthode qui permet de changer l'état du réseau.
+	\item \texttt{update} : Une méthode qui met à jour l'état du réseau de manière asynchrone sur un pas de temps.
+	\item \texttt{simulate} : Une méthode qui met à jour l'état du réseau de manière asynchrone sur un nombre de
+	      pas de temps \texttt{m} et qui retourne l'historique des états du réseau.
+	\item \texttt{learn\_one\_state} : Une méthode qui permet d'apprendre un état \texttt{state} en modifiant les
+	      poids de connexions.
+	\item \texttt{learn\_many\_states} : Une méthode qui permet d'apprendre plusieurs états \texttt{states} en modifiant les
+	      poids de connexions.
+\end{itemize}
+
+\subsection{Visualisation des résultats}\label{subsec:visualisation}
+
+\noindent Vous devez produire :
+\begin{itemize}
+	\item Graphiques de l’énergie du réseau en fonction du temps pour différents motifs mémorisés.
+	\item Visualisation de l’évolution de l’état du réseau en fonction du temps (GIFs recommandés).
+\end{itemize}
+
+\noindent Les tests doivent inclure les états \texttt{image} et \texttt{message} dans \texttt{tests/data}. Ajoutez une courte analyse sur l’apprentissage de plusieurs états et sur la dynamique du réseau.
+
+% ---------------------------------------------------
+\section{Barème d’évaluation}\label{sec:criteres}
+% ---------------------------------------------------
+
+\noindent Ce devoir est \textbf{facultatif}. Aucun point bonus ne sera attribué pour sa complétion, mais vous êtes encouragés à le discuter avec le professeur ou le démonstrateur.
+
+\printbibliography
+
+\end{document}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
